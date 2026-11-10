@@ -1,0 +1,39 @@
+[project]
+name = "jinjasubst"
+version = "0.1.0"
+requires-python = ">= 3.8"
+description = "Render stdin as Jinja2 template using environment variables"
+readme = "README.md"
+license = "MIT"
+maintainers = [{name = "Nadav Tasher", email = "hey@nadav.app"}]
+classifiers = [
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+]
+dependencies = [
+	"jinja2",
+]
+keywords = ["jinja2", "envsubst", "templates"]
+
+[project.urls]
+Homepage = "https://github.com/NadavTasher/jinjasubst"
+
+[project.scripts]
+jsubst = "jinjasubst.cli:main"
+jenvsubst = "jinjasubst.cli:main"
+jinjasubst = "jinjasubst.cli:main"
+j2subst = "jinjasubst.cli:main"
+j2envsubst = "jinjasubst.cli:main"
+jinja2subst = "jinjasubst.cli:main"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.distutils.bdist_wheel]
+universal = false
+
+[tool.yapf]
+based_on_style = "google"
+column_limit = 400
+indent_width = 4
