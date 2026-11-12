@@ -1,0 +1,17 @@
+Hello {{ USER }}.
+
+The date is {{ shell("date") }}.
+
+Your docker images are:
+
+{{ exec_check("docker", "image", "ls") }}
+
+Your name reversed is {{ USER | exec_check("rev") }}
+
+{% set test = ["echo", "hello"] %}
+
+This exec should work: {{ exec_check(*test) }}
+
+This should be encoded: {{ USER | base64 }} {{ USER | hex }}
+
+This should not be encoded: {{ USER | base64 | hex | hex_decode | base64_decode }}
