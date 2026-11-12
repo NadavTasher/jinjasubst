@@ -1,7 +1,7 @@
 import os
 import sys
-import json
 import shlex
+import base64
 import argparse
 import traceback
 import subprocess
@@ -10,28 +10,16 @@ import subprocess
 import jinja2
 
 
-def exec(value: str, check: bool = False):
+def _run(value, input: str | bytes = None, shell: bool = True, check: bool = False):
+    # Convert input to bytes
+    if isinstance(input, bytes):
+        input = input.decode("utf-8")
+
     # Run value as a shell command and capture the output
-    process = subprocess.run(value, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, check=check)
+    process = subprocess.run(value, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, input=input, shell=shell, check=check)
 
     # Return the process output
     return process.stdout
-
-
-def exec_check(value: str):
-    return exec(value, check=True)
-
-
-def shell(value: str, command: str, check: bool = False):
-    # Run command with value as input and capture the output
-    process = subprocess.run(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, input=value, check=check)
-
-    # Return the process output
-    return process.stdout
-
-
-def shell_check(value: str, command: str):
-    return shell(value, command, check=True)
 
 
 def parse_arguments():
@@ -61,19 +49,45 @@ def main():
         keep_trailing_newline=True,
     )
 
-    # Add the json dumps filter
-    environment.filters.update(json=json.dumps)
+    # Functions that have the same implementation as globals and filters
+    functions = dict(
+        # Shell argument quoting
+        shlex=shlex.quote,
+        shlex_quote=shlex.quote,
+        shlex_split=shlex.split,
 
-    # Add the shlex quote filter
-    environment.filters.update(shlex=shlex.quote)
+        # Hex encoding
+        hex=lambda value: bytes.hex(value.encode("utf-8")),
+        hex_encode=lambda value: bytes.hex(value.encode("utf-8")),
+        hex_decode=lambda value: bytes.fromhex(value).decode("utf-8"),
+
+        # Base64 encoding
+        base64=lambda value: base64.b64encode(value.encode("utf-8")).decode("utf-8"),
+        base64_encode=lambda value: base64.b64encode(value.encode("utf-8")).decode("utf-8"),
+        base64_decode=lambda value: base64.b64decode(value.encode("utf-8")).decode("utf-8"),
+    )
+
+    # Add functions to globals and filters
+    environment.globals.update(functions)
+    environment.filters.update(functions)
 
     # If shell filter is enabled, add it
     if arguments.shell:
-        # When executing a shell without a filter, shell -> exec
-        environment.globals.update(shell=exec, shell_check=exec_check)
+        # Globals don't take input, so lambdas are without input
+        environment.globals.update(
+            shell=lambda command: _run(command, shell=True, check=False),
+            shell_check=lambda command: _run(command, shell=True, check=True),
+            exec=lambda *arguments: _run(arguments, shell=False, check=False),
+            exec_check=lambda *arguments: _run(arguments, shell=False, check=True),
+        )
 
-        # When executing a shell with a filter, shell -> shell, and takes input
-        environment.filters.update(shell=shell, shell_check=shell_check)
+        # Filters take input, so use input
+        environment.filters.update(
+            shell=lambda input, command: _run(command, input=input, shell=True, check=False),
+            shell_check=lambda input, command: _run(command, input=input, shell=True, check=True),
+            exec=lambda input, *arguments: _run(arguments, input=input, shell=False, check=False),
+            exec_check=lambda input, *arguments: _run(arguments, input=input, shell=False, check=True),
+        )
 
     try:
         # Load the input template
