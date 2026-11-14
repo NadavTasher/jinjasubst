@@ -16,21 +16,28 @@ or:
 pipx install jinjasubst
 ```
 
+## Quirks
+
+The jinja2 environment is initialized with a `FileSystemLoader`.
+The searchpath of this loader is the parent directory of the input file.
+When the input file is `-` (stdin), the current working directory is used instead.
+
 ## Functions and filters
 
-Shell escaping:
+Files and directories:
 
-- shlex, shlex_quote - escape using `shlex.quote`
-- shlex_split - split using `shlex.split`
+- read - read a file
+- listdir - list entries in a directory
 
-Encoding:
+Encoding and escaping:
 
-- base64, base64_encode - encode to base64
-- base64_decode - decode from base64
-- hex, hex_encode - encode to hex
-- hex_decode - decode from hex
+- toshell - escape using `shlex.quote`
+- base64, tobase64 - encode to base64
+- frombase64 - decode from base64
+- hex, tohex - encode to hex
+- fromhex - decode from hex
 
-Shell (all take stdin as filter):
+Process execution, enabled with -s (all accept stdin when used as filters):
 
 - shell - execute shell command
 - shell_check - execute shell command and check exit code

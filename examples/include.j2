@@ -1,0 +1,13 @@
+This is original, but the following will be included:
+
+{% include "shell.j2" %}
+
+This will also be read:
+
+{{ read("shell.j2") }}
+
+The following are the filenames in the directory:
+
+{% for file in listdir() %}
+Path: {{ file }}
+{% endfor %}
