@@ -10,10 +10,24 @@ import subprocess
 import jinja2
 
 
-def _run(value, input: str | bytes = None, shell: bool = True, check: bool = False):
-    # Convert input to bytes
-    if isinstance(input, bytes):
-        input = input.decode("utf-8")
+def _internal_normalize(value: str | bytes) -> str:
+    # Convert input to string
+    if isinstance(value, bytes):
+        return value.decode("utf-8")
+
+    # Make sure input is a string
+    if isinstance(value, str):
+        return value
+
+    # Not a valid value
+    raise ValueError(f"{value!r} is not a string")
+
+
+# Define helper functions to be used in lambdas
+def _internal_run_process(value, input: str | bytes = None, shell: bool = True, check: bool = False) -> str:
+    if input is not None:
+        # Convert input to string
+        input = _internal_normalize(input)
 
     # Run value as a shell command and capture the output
     process = subprocess.run(value, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, input=input, shell=shell, check=check)
@@ -22,12 +36,15 @@ def _run(value, input: str | bytes = None, shell: bool = True, check: bool = Fal
     return process.stdout
 
 
-def parse_arguments():
+def main():
     # Create argument parser
     parser = argparse.ArgumentParser()
 
-    # Enable shell filter
-    parser.add_argument("-s", "--shell", action="store_true", help="Enable shell() filter")
+    # Toggles for shell syntax
+    parser.add_argument("-p", "--posix", action="store_true", help="Use POSIX like ${variable} syntax")
+
+    # Toggles for extra functionalify
+    parser.add_argument("-s", "--shell", action="store_true", help="Enable shells functionality")
 
     # Input filename
     parser.add_argument("-i", "--input", action="store", default="-", help="Input file path")
@@ -36,57 +53,72 @@ def parse_arguments():
     parser.add_argument("-o", "--output", action="store", default="-", help="Output file path")
 
     # Parse the arguments
-    return parser.parse_args()
+    arguments = parser.parse_args()
 
-
-def main():
-    # Parse the arguments
-    arguments = parse_arguments()
+    # Generate the search path. When reading from stdin (-), this would be the current working directory.
+    searchpath = os.path.dirname(arguments.input) or os.getcwd()
 
     # Create jinja2 environment
     environment = jinja2.Environment(
+        # Disable autoescaping of HTML tags
         autoescape=False,
+
+        # Don't strip outputs
         keep_trailing_newline=True,
+
+        # File system loader for {% include %}
+        loader=jinja2.FileSystemLoader(searchpath),
     )
 
-    # Functions that have the same implementation as globals and filters
+    if arguments.posix:
+        # Variables start with ${ just like in POSIX shells
+        environment.variable_start_string = "${"
+
+        # Variables end with } just like in POSIX shells
+        environment.variable_end_string = "}"
+
+    # Add additional environment globals
     functions = dict(
-        # Shell argument quoting
-        shlex=shlex.quote,
-        shlex_quote=shlex.quote,
-        shlex_split=shlex.split,
+        # For reading files
+        read=lambda path: open(os.path.join(searchpath, _internal_normalize(path)), "r", encoding="utf-8").read(),
 
-        # Hex encoding
-        hex=lambda value: bytes.hex(value.encode("utf-8")),
-        hex_encode=lambda value: bytes.hex(value.encode("utf-8")),
-        hex_decode=lambda value: bytes.fromhex(value).decode("utf-8"),
+        # For listing files in a directory
+        listdir=lambda path=".": os.listdir(os.path.join(searchpath, _internal_normalize(path))),
 
-        # Base64 encoding
-        base64=lambda value: base64.b64encode(value.encode("utf-8")).decode("utf-8"),
-        base64_encode=lambda value: base64.b64encode(value.encode("utf-8")).decode("utf-8"),
-        base64_decode=lambda value: base64.b64decode(value.encode("utf-8")).decode("utf-8"),
-    )
+        # For encoding shell arguments
+        toshell=lambda value: shlex.quote(_internal_normalize(value)),
 
-    # Add functions to globals and filters
+        # Hex encoder and decoder
+        hex=lambda value: bytes.hex(_internal_normalize(value).encode("utf-8")),
+        tohex=lambda value: bytes.hex(_internal_normalize(value).encode("utf-8")),
+        fromhex=lambda value: bytes.fromhex(_internal_normalize(value)).decode("utf-8"),
+
+        # Base64 encoder and decoder
+        base64=lambda value: base64.b64encode(_internal_normalize(value).encode("utf-8")).decode("utf-8"),
+        tobase64=lambda value: base64.b64encode(_internal_normalize(value).encode("utf-8")).decode("utf-8"),
+        frombase64=lambda value: base64.b64decode(_internal_normalize(value).encode("utf-8")).decode("utf-8"))
+
+    # Add the functions as globals and filters
     environment.globals.update(functions)
     environment.filters.update(functions)
 
-    # If shell filter is enabled, add it
+    # Process execution capabilities are disabled by default since
+    # they might expose the rendering host to RCE.
     if arguments.shell:
-        # Globals don't take input, so lambdas are without input
+        # Globals don't take input, so lambdas are without input=
         environment.globals.update(
-            shell=lambda command: _run(command, shell=True, check=False),
-            shell_check=lambda command: _run(command, shell=True, check=True),
-            exec=lambda *arguments: _run(arguments, shell=False, check=False),
-            exec_check=lambda *arguments: _run(arguments, shell=False, check=True),
+            shell=lambda command: _internal_run_process(command, shell=True, check=False),
+            shell_check=lambda command: _internal_run_process(command, shell=True, check=True),
+            exec=lambda *arguments: _internal_run_process(arguments, shell=False, check=False),
+            exec_check=lambda *arguments: _internal_run_process(arguments, shell=False, check=True),
         )
 
-        # Filters take input, so use input
+        # Filters take input, so use input=
         environment.filters.update(
-            shell=lambda input, command: _run(command, input=input, shell=True, check=False),
-            shell_check=lambda input, command: _run(command, input=input, shell=True, check=True),
-            exec=lambda input, *arguments: _run(arguments, input=input, shell=False, check=False),
-            exec_check=lambda input, *arguments: _run(arguments, input=input, shell=False, check=True),
+            shell=lambda input, command: _internal_run_process(command, input=input, shell=True, check=False),
+            shell_check=lambda input, command: _internal_run_process(command, input=input, shell=True, check=True),
+            exec=lambda input, *arguments: _internal_run_process(arguments, input=input, shell=False, check=False),
+            exec_check=lambda input, *arguments: _internal_run_process(arguments, input=input, shell=False, check=True),
         )
 
     try:
