@@ -80,10 +80,10 @@ def main():
     # Add additional environment globals
     functions = dict(
         # For reading files
-        read=lambda path: open(os.path.join(searchpath, _internal_normalize(path)), "r", encoding="utf-8").read(),
+        read=lambda *paths: open(os.path.join(searchpath, *[_internal_normalize(path) for path in paths]), "r", encoding="utf-8").read(),
 
         # For listing files in a directory
-        listdir=lambda path=".": os.listdir(os.path.join(searchpath, _internal_normalize(path))),
+        listdir=lambda *paths: os.listdir(os.path.join(searchpath, *[_internal_normalize(path) for path in paths])),
 
         # For encoding shell arguments
         toshell=lambda value: shlex.quote(_internal_normalize(value)),
