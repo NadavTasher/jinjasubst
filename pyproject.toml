@@ -1,6 +1,6 @@
 [project]
 name = "jinjasubst"
-version = "0.3.0"
+version = "0.3.1"
 requires-python = ">= 3.8"
 description = "Render stdin as Jinja2 template using environment variables"
 readme = "README.md"
