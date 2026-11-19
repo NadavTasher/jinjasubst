@@ -7,6 +7,7 @@ import traceback
 import subprocess
 
 # For template rendering
+import yaml
 import jinja2
 
 
@@ -88,6 +89,11 @@ def main():
         # For encoding shell arguments
         toshell=lambda value: shlex.quote(_internal_normalize(value)),
 
+        # YAML encoder and decoder
+        yaml=lambda value: yaml.safe_dump(value),
+        toyaml=lambda value: yaml.safe_dump(value),
+        fromyaml=lambda value: yaml.safe_load(_internal_normalize(value)),
+
         # Hex encoder and decoder
         hex=lambda value: bytes.hex(_internal_normalize(value).encode("utf-8")),
         tohex=lambda value: bytes.hex(_internal_normalize(value).encode("utf-8")),
@@ -96,7 +102,8 @@ def main():
         # Base64 encoder and decoder
         base64=lambda value: base64.b64encode(_internal_normalize(value).encode("utf-8")).decode("utf-8"),
         tobase64=lambda value: base64.b64encode(_internal_normalize(value).encode("utf-8")).decode("utf-8"),
-        frombase64=lambda value: base64.b64decode(_internal_normalize(value).encode("utf-8")).decode("utf-8"))
+        frombase64=lambda value: base64.b64decode(_internal_normalize(value).encode("utf-8")).decode("utf-8"),
+    )
 
     # Add the functions as globals and filters
     environment.globals.update(functions)

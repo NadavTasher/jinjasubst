@@ -31,11 +31,13 @@ Files and directories:
 
 Encoding and escaping:
 
-- toshell - escape using `shlex.quote`
-- base64, tobase64 - encode to base64
-- frombase64 - decode from base64
-- hex, tohex - encode to hex
-- fromhex - decode from hex
+- `toshell` - escape using `shlex.quote`
+- `yaml`, `toyaml` - encode to yaml
+- `fromyaml` - decode from yaml
+- `base64`, `tobase64` - encode to base64
+- `frombase64` - decode from base64
+- `hex`, `tohex` - encode to hex
+- `fromhex` - decode from hex
 
 Process execution, enabled with -s (all accept stdin when used as filters):
 

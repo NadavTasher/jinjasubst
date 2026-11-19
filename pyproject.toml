@@ -12,6 +12,7 @@ classifiers = [
 ]
 dependencies = [
 	"jinja2",
+    "PyYAML",
 ]
 keywords = ["jinja2", "envsubst", "templates"]
 

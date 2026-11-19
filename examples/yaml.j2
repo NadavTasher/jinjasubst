@@ -1,0 +1,7 @@
+{% for file in ["example.yaml", "example.json"] %}
+{% set data = read(file) | fromyaml %}
+
+{{ data.hello.world }}
+
+{{ data | toyaml }}
+{% endfor %}
