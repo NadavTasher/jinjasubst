@@ -44,7 +44,7 @@ def main():
     # Toggles for shell syntax
     parser.add_argument("-p", "--posix", action="store_true", help="Use POSIX like ${variable} syntax")
 
-    # Toggles for extra functionalify
+    # Toggles for extra functionality
     parser.add_argument("-s", "--shell", action="store_true", help="Enable shells functionality")
 
     # Input filename
