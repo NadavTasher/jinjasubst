@@ -44,10 +44,6 @@ def main():
     # POSIX envsubst style compatibility
     parser.add_argument("-p", "--posix", action="store_true", help="Use POSIX like ${variable} syntax")
 
-    # Custom prefix and suffix
-    parser.add_argument("-P", "--prefix", action="store", type=str, help="Variable start string")
-    parser.add_argument("-S", "--suffix", action="store", type=str, help="Variable end string")
-
     # Enable command execution support
     parser.add_argument("-s", "--shell", action="store_true", help="Enable shells functionality")
 
@@ -103,14 +99,6 @@ def main():
 
         # Variables end with } just like in POSIX shells
         environment.variable_end_string = "}"
-
-    if arguments.prefix:
-        # Use custom prefix
-        environment.variable_start_string = arguments.prefix
-
-    if arguments.suffix:
-        # Use custom suffix
-        environment.variable_end_string = arguments.suffix
 
     if arguments.strict:
         # Set the error handler
