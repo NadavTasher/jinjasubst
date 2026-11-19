@@ -47,6 +47,9 @@ def main():
     # Toggles for extra functionality
     parser.add_argument("-s", "--shell", action="store_true", help="Enable shells functionality")
 
+    # Toggles for behavioral changes
+    parser.add_argument("-e", "--strict", action="store_true", help="Error out when a value is missing")
+
     # Input filename
     parser.add_argument("-i", "--input", action="store", default="-", help="Input file path")
 
@@ -77,6 +80,10 @@ def main():
 
         # Variables end with } just like in POSIX shells
         environment.variable_end_string = "}"
+
+    if arguments.strict:
+        # Set the error handler
+        environment.undefined = jinja2.StrictUndefined
 
     # Add additional environment globals
     functions = dict(
