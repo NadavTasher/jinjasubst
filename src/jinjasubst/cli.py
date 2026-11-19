@@ -89,6 +89,10 @@ def main():
         # Don't strip outputs
         keep_trailing_newline=True,
 
+        # Strip and trim blocks
+        trim_blocks=True,
+        lstrip_blocks=True,
+
         # File system loader for {% include %}
         loader=jinja2.FileSystemLoader(searchpath),
     )
