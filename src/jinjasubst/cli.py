@@ -41,20 +41,24 @@ def main():
     # Create argument parser
     parser = argparse.ArgumentParser()
 
-    # Toggles for shell syntax
+    # POSIX envsubst style compatibility
     parser.add_argument("-p", "--posix", action="store_true", help="Use POSIX like ${variable} syntax")
 
-    # Toggles for extra functionality
+    # Custom prefix and suffix
+    parser.add_argument("-P", "--prefix", action="store", type=str, help="Variable start string")
+    parser.add_argument("-S", "--suffix", action="store", type=str, help="Variable end string")
+
+    # Enable command execution support
     parser.add_argument("-s", "--shell", action="store_true", help="Enable shells functionality")
 
-    # Toggles for behavioral changes
+    # Enable strict variable names
     parser.add_argument("-e", "--strict", action="store_true", help="Error out when a value is missing")
 
     # Input filename
-    parser.add_argument("-i", "--input", action="store", default="-", help="Input file path")
+    parser.add_argument("-i", "--input", action="store", type=str, default="-", help="Input file path")
 
     # Output filename
-    parser.add_argument("-o", "--output", action="store", default="-", help="Output file path")
+    parser.add_argument("-o", "--output", action="store", type=str, default="-", help="Output file path")
 
     # Parse the arguments
     arguments = parser.parse_args()
@@ -80,6 +84,14 @@ def main():
 
         # Variables end with } just like in POSIX shells
         environment.variable_end_string = "}"
+
+    if arguments.prefix:
+        # Use custom prefix
+        environment.variable_start_string = arguments.prefix
+
+    if arguments.suffix:
+        # Use custom suffix
+        environment.variable_end_string = arguments.suffix
 
     if arguments.strict:
         # Set the error handler
