@@ -54,6 +54,9 @@ def main():
     # Enable strict variable names
     parser.add_argument("-e", "--strict", action="store_true", help="Error out when a value is missing")
 
+    # Load additional variable to the context from YAML
+    parser.add_argument("-f", "--load", action="store", type=str, nargs="*", help="Load YAML variable file")
+
     # Input filename
     parser.add_argument("-i", "--input", action="store", type=str, default="-", help="Input file path")
 
@@ -65,6 +68,18 @@ def main():
 
     # Generate the search path. When reading from stdin (-), this would be the current working directory.
     searchpath = os.path.dirname(arguments.input) or os.getcwd()
+
+    # Create context variables
+    context = dict()
+
+    # Load additional variable files
+    if arguments.load:
+        for path in arguments.load:
+            with open(path, "r", encoding="utf-8") as variables_file:
+                context.update(yaml.safe_load(variables_file))
+
+    # Load the environment into the context
+    context.update(os.environ.copy())
 
     # Create jinja2 environment
     environment = jinja2.Environment(
@@ -158,7 +173,7 @@ def main():
                 template = environment.from_string(file.read())
 
         # Render the template
-        template = template.render(os.environ)
+        template = template.render(context)
 
         # Write the rendered template to the output
         if arguments.output == "-":
